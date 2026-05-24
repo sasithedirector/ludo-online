@@ -1,35 +1,13 @@
-# Render Deployment Configuration
-# ================================
-# Deploy this repo on Render as a Web Service.
-#
-# Option A: Use this render.yaml (Blueprint)
-#   1. Push this file to your repo root
-#   2. Go to Render Dashboard → Blueprints → New Blueprint Instance
-#   3. Connect your repo and Render auto-detects this config
-#
-# Option B: Manual setup
-#   1. Go to Render Dashboard → New → Web Service
-#   2. Connect your GitHub repo
-#   3. Set:
-#      - Build Command:  npm run install
-#      - Start Command:  npm start
-#      - Node Version:   18
-#   4. Add Environment Variable:  NODE_ENV = production
-#   5. Deploy!
-
-
-
 services:
   - type: web
     name: ludo-online
     env: node
     plan: free
-    buildCommand: npm run install
-    startCommand: npm start
+    # Install all deps (server + client) then build client
+    buildCommand: npm run install:all && npm run build
+    startCommand: cd server && NODE_ENV=production node index.js
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: "3001"
     autoDeploy: true

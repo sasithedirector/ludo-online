@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { GameState, Color } from '../types';
+import type { GameState } from '../types';
 import { PATH, HOME_STRETCH, HOME_CELLS, COLORS, SAFE_POS } from '../types';
 
 interface BoardProps {
@@ -18,13 +18,13 @@ export default function Board({ game, myColor, isMyTurn, phase, onMoveToken }: B
       const pos = player.tokens[i].pos;
         let key: string;
         if (pos === -1) {
-          const hc = HOME_CELLS[player.color as Color][i];
+          const hc = HOME_CELLS[player.color as string][i];
           key = `home-${hc[0]}-${hc[1]}-${player.color}-${i}`;
         } else if (pos < 52) {
           const p = PATH[pos];
           key = `path-${p[0]}-${p[1]}`;
         } else if (pos < 58) {
-          const h = HOME_STRETCH[player.color as Color][pos - 52];
+          const h = HOME_STRETCH[player.color as string][pos - 52];
           key = `stretch-${h[0]}-${h[1]}`;
         } else {
           key = 'center-7-7';
@@ -46,7 +46,7 @@ export default function Board({ game, myColor, isMyTurn, phase, onMoveToken }: B
   // Home area tokens
   for (const color of COLORS) {
     for (let i = 0; i < 4; i++) {
-      const hc = HOME_CELLS[color as Color][i];
+      const hc = HOME_CELLS[color as string][i];
       const key = `home-${hc[0]}-${hc[1]}-${color}-${i}`;
       const tokens = tokenMap.get(key);
       if (tokens && tokens.length > 0) {
@@ -71,7 +71,7 @@ export default function Board({ game, myColor, isMyTurn, phase, onMoveToken }: B
   // Home stretch tokens
   for (const color of COLORS) {
     for (let si = 0; si < 6; si++) {
-      const [hr, hc] = HOME_STRETCH[color as Color][si];
+      const [hr, hc] = HOME_STRETCH[color as string][si];
       const key = `stretch-${hr}-${hc}`;
       const tokens = tokenMap.get(key);
       if (tokens && tokens.length > 0) {

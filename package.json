@@ -1,8 +1,11 @@
 {
+  "name": "ludo-online",
   "version": "1.0.0",
-  "description": "Online Multiplayer Ludo Game — Production",
+  "description": "Online Multiplayer Ludo Game",
   "scripts": {
-    "install": "cd server && npm ci --production && cd ../client && npm ci && npm run build",
+    "install:all": "cd server && npm ci --production && cd ../client && npm ci",
+    "build": "cd client && npm run build",
+    "postinstall": "npm run install:all && npm run build",
     "start": "cd server && NODE_ENV=production node index.js"
   },
   "engines": {

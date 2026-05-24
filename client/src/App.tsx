@@ -269,7 +269,7 @@ function GameScreen({ room, username, onLogout }: {
             myColor={myPlayer?.color}
             isMyTurn={isMyTurn}
             phase={game.phase}
-            onMoveToken={(idx) => gameClient.moveToken(idx)}
+            onMoveToken={(idx: number) => gameClient.moveToken(idx)}
           />
           <div className="game-controls">
             {isMyTurn && game.phase === 'roll' && (
