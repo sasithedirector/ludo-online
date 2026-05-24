@@ -321,6 +321,11 @@
 }
 .turn-msg { color: #aaa; font-size: 0.9rem; }
 .turn-msg.waiting { color: #f39c12; }
+.turn-msg.auto-move { color: #2ecc71; animation: pulse-text 1s infinite; }
+@keyframes pulse-text {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
 
 /* ─── DICE ─── */
 .dice {

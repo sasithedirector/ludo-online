@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { GameState } from '../types';
-import { PATH, HOME_STRETCH, HOME_CELLS, COLORS, SAFE_POS } from '../types';
+import { PATH, HOME_STRETCH, HOME_CELLS, COLORS, SAFE_POS, START_POS } from '../types';
 
 interface BoardProps {
   game: GameState;
@@ -8,6 +8,50 @@ interface BoardProps {
   isMyTurn: boolean;
   phase: string;
   onMoveToken: (idx: number) => void;
+}
+
+// ─── Client-side game logic (must match server) ───
+function canMoveToken(game: GameState, color: string, tokenIdx: number, diceVal: number): boolean {
+  const player = game.players.find(p => p.color === color);
+  if (!player) return false;
+  const t = player.tokens[tokenIdx];
+  if (t.pos === 58) return false;
+
+  if (t.pos === -1) {
+    // In home — need 6 to bring out
+    if (diceVal !== 6) return false;
+    const startPos = START_POS[color] ?? 0;
+    return !player.tokens.some((ot, i) => i !== tokenIdx && ot.pos === startPos);
+  }
+
+  if (t.pos >= 52) {
+    // On home stretch
+    return t.pos + diceVal <= 58;
+  }
+
+  // On main path
+  const newPos = t.pos + diceVal;
+  const entry: Record<string, number> = { red: 51, green: 11, yellow: 25, blue: 37 };
+  const homeEntry = entry[color] ?? 0;
+
+  // Check if passing through entry into home
+  for (let i = t.pos + 1; i <= newPos; i++) {
+    if (i === homeEntry) {
+      const stepsBeforeEntry = homeEntry - t.pos;
+      const homeStep = diceVal - stepsBeforeEntry;
+      return homeStep <= 5;
+    }
+  }
+
+  return newPos < 52;
+}
+
+function countMovableTokens(game: GameState, color: string, diceVal: number): number {
+  let count = 0;
+  for (let i = 0; i < 4; i++) {
+    if (canMoveToken(game, color, i, diceVal)) count++;
+  }
+  return count;
 }
 
 export default function Board({ game, myColor, isMyTurn, phase, onMoveToken }: BoardProps) {
@@ -36,8 +80,26 @@ export default function Board({ game, myColor, isMyTurn, phase, onMoveToken }: B
     return map;
   }, [game]);
 
-  const canMove = (color: string, _tokenIdx: number) => {
-    return isMyTurn && phase === 'move' && myColor === color;
+  // ─── Auto-move: if exactly one token can move, move it automatically ───
+  const currentPlayer = game.players[game.turn];
+  const isMyTurnAndMove = isMyTurn && phase === 'move' && myColor && currentPlayer?.color === myColor;
+
+  if (isMyTurnAndMove && game.dice > 0) {
+    const movableCount = countMovableTokens(game, myColor, game.dice);
+    if (movableCount === 1) {
+      // Find the one movable token and auto-move it
+      const movableIdx = [0, 1, 2, 3].find(i => canMoveToken(game, myColor, i, game.dice));
+      if (movableIdx !== undefined) {
+        // Use setTimeout to avoid state update during render
+        setTimeout(() => onMoveToken(movableIdx), 300);
+      }
+    }
+  }
+
+  const canMove = (color: string, tokenIdx: number) => {
+    if (!isMyTurn || phase !== 'move' || !myColor || color !== myColor) return false;
+    if (game.dice <= 0) return false;
+    return canMoveToken(game, color, tokenIdx, game.dice);
   };
 
   // Collect all overlay tokens (home areas, stretches, center)

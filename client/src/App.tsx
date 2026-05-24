@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { gameClient } from './GameClient';
-import type { RoomData } from './types';
+import type { RoomData, GameState } from './types';
 import Board from './components/Board';
 import Dice from './components/Dice';
 import Chat from './components/Chat';
@@ -239,6 +239,13 @@ function GameScreen({ room, username, onLogout }: {
   const isMyTurn = currentPlayer?.username === username;
   const myPlayer = game.players.find(p => p.username === username);
   const winner = game.phase === 'gameover' ? game.players.find(p => p.finished) : null;
+  const myColor = myPlayer?.color;
+
+  // Count movable tokens for auto-move display
+  const movableCount = (isMyTurn && game.phase === 'move' && myColor)
+    ? countMovableTokensForColor(game, myColor, game.dice)
+    : 0;
+  const isAutoMoving = movableCount === 1;
 
   return (
     <div className="game-layout">
@@ -268,7 +275,7 @@ function GameScreen({ room, username, onLogout }: {
           )}
           <Board
             game={game}
-            myColor={myPlayer?.color}
+            myColor={myColor}
             isMyTurn={isMyTurn}
             phase={game.phase}
             onMoveToken={(idx: number) => gameClient.moveToken(idx)}
@@ -279,8 +286,14 @@ function GameScreen({ room, username, onLogout }: {
                 🎲 Roll Dice
               </button>
             )}
-            {game.phase === 'move' && isMyTurn && (
-              <span className="turn-msg">Select a highlighted token to move!</span>
+            {game.phase === 'move' && isMyTurn && isAutoMoving && (
+              <span className="turn-msg auto-move">🎲 Auto-moving your only available token...</span>
+            )}
+            {game.phase === 'move' && isMyTurn && !isAutoMoving && movableCount > 1 && (
+              <span className="turn-msg">Select a highlighted token to move! ({movableCount} options)</span>
+            )}
+            {game.phase === 'move' && isMyTurn && movableCount === 0 && (
+              <span className="turn-msg waiting">No valid moves — skipping turn...</span>
             )}
             {!isMyTurn && game.phase !== 'gameover' && (
               <span className="turn-msg waiting">
@@ -298,6 +311,34 @@ function GameScreen({ room, username, onLogout }: {
       </div>
     </div>
   );
+}
+
+// Helper to count movable tokens (must match Board.tsx logic)
+function countMovableTokensForColor(game: GameState, color: string, diceVal: number): number {
+  const START: Record<string, number> = { red: 0, green: 13, yellow: 26, blue: 39 };
+  const HOME_ENTRY: Record<string, number> = { red: 51, green: 11, yellow: 25, blue: 37 };
+  const player = game.players.find((p: any) => p.color === color);
+  if (!player) return 0;
+  let count = 0;
+  for (let i = 0; i < 4; i++) {
+    const t = player.tokens[i];
+    if (t.pos === 58) continue;
+    if (t.pos === -1) {
+      if (diceVal === 6 && !player.tokens.some((ot: any, j: number) => j !== i && ot.pos === (START[color] ?? 0))) count++;
+    } else if (t.pos >= 52) {
+      if (t.pos + diceVal <= 58) count++;
+    } else {
+      const newPos = t.pos + diceVal;
+      const entry = HOME_ENTRY[color] ?? 0;
+      let canMove = false;
+      for (let j = t.pos + 1; j <= newPos; j++) {
+        if (j === entry) { canMove = (diceVal - (entry - t.pos)) <= 5; break; }
+      }
+      if (!canMove) canMove = newPos < 52;
+      if (canMove) count++;
+    }
+  }
+  return count;
 }
 
 function GameStatus({ game }: { game: RoomData['game']; username: string }) {
