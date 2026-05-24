@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import type { GameState } from '../types';
 import { PATH, HOME_STRETCH, HOME_CELLS, COLORS, SAFE_POS, START_POS } from '../types';
 
@@ -81,20 +81,26 @@ export default function Board({ game, myColor, isMyTurn, phase, onMoveToken }: B
   }, [game]);
 
   // ─── Auto-move: if exactly one token can move, move it automatically ───
+  const autoMoveRef = useRef<number | null>(null);
   const currentPlayer = game.players[game.turn];
   const isMyTurnAndMove = isMyTurn && phase === 'move' && myColor && currentPlayer?.color === myColor;
 
-  if (isMyTurnAndMove && game.dice > 0) {
-    const movableCount = countMovableTokens(game, myColor, game.dice);
-    if (movableCount === 1) {
-      // Find the one movable token and auto-move it
-      const movableIdx = [0, 1, 2, 3].find(i => canMoveToken(game, myColor, i, game.dice));
-      if (movableIdx !== undefined) {
-        // Use setTimeout to avoid state update during render
-        setTimeout(() => onMoveToken(movableIdx), 300);
+  useEffect(() => {
+    if (autoMoveRef.current) clearTimeout(autoMoveRef.current);
+    if (isMyTurnAndMove && game.dice > 0) {
+      const movableCount = countMovableTokens(game, myColor, game.dice);
+      if (movableCount === 1) {
+        const movableIdx = [0, 1, 2, 3].find(i => canMoveToken(game, myColor, i, game.dice));
+        if (movableIdx !== undefined) {
+          autoMoveRef.current = window.setTimeout(() => {
+            autoMoveRef.current = null;
+            onMoveToken(movableIdx);
+          }, 800);
+        }
       }
     }
-  }
+    return () => { if (autoMoveRef.current) clearTimeout(autoMoveRef.current); };
+  }, [isMyTurnAndMove, game.dice, myColor, game.turn, phase]);
 
   const canMove = (color: string, tokenIdx: number) => {
     if (!isMyTurn || phase !== 'move' || !myColor || color !== myColor) return false;
@@ -113,16 +119,21 @@ export default function Board({ game, myColor, isMyTurn, phase, onMoveToken }: B
       const tokens = tokenMap.get(key);
       if (tokens && tokens.length > 0) {
         for (const t of tokens) {
+          const movable = canMove(t.color, t.tokenIdx);
           overlays.push(
             <div
               key={`home-tok-${color}-${i}`}
               style={{
                 position: 'absolute', top: `${(hc[0] / 15) * 100}%`, left: `${(hc[1] / 15) * 100}%`,
                 width: `${100 / 15}%`, height: `${100 / 15}%`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none'
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                pointerEvents: movable ? 'auto' : 'none',
+                zIndex: movable ? 10 : 1,
               }}
             >
-              <Token color={t.color} size="home" offset={0} />
+              <Token color={t.color} tokenIdx={t.tokenIdx} canMove={movable}
+                onClick={movable ? () => onMoveToken(t.tokenIdx) : undefined}
+                size="home" offset={0} />
             </div>
           );
         }
