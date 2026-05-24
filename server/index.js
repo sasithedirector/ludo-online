@@ -309,8 +309,10 @@ io.on('connection', (socket) => {
 
   // ─── JOIN ROOM ───
   socket.on('joinRoom', ({ token, roomCode }) => {
+    console.log(`[joinRoom] socket=${socket.id} roomCode=${roomCode} token=${token ? 'yes' : 'no'}`);
     const decoded = authenticateSocket(token);
     if (!decoded) {
+      console.log('[joinRoom] auth failed');
       socket.emit('error', { message: 'Authentication failed' });
       return;
     }
@@ -320,22 +322,31 @@ io.on('connection', (socket) => {
 
     let room;
     if (roomCode) {
-      room = rooms.get(roomCode.toUpperCase());
+      const code = roomCode.toUpperCase().trim();
+      if (!/^[A-HJ-NP-Z2-9]{6}$/.test(code)) {
+        console.log(`[joinRoom] invalid code format: "${code}"`);
+        socket.emit('error', { message: 'Invalid room code format' });
+        return;
+      }
+      console.log(`[joinRoom] looking up room: "${code}", total rooms: ${rooms.size}, codes: ${[...rooms.keys()].join(',')}`);
+      room = rooms.get(code);
       if (!room) {
+        console.log('[joinRoom] room not found');
         socket.emit('error', { message: 'Room not found' });
         return;
       }
       if (room.status !== 'waiting') {
+        console.log(`[joinRoom] game already in progress, status: ${room.status}`);
         socket.emit('error', { message: 'Game already in progress' });
         return;
       }
       if (room.players.length >= room.maxPlayers) {
+        console.log('[joinRoom] room is full');
         socket.emit('error', { message: 'Room is full' });
         return;
       }
-      // Check if already in room
+      // Check if already in room (reconnecting)
       if (room.players.some(p => p.username === username)) {
-        // Reconnecting
         socket.join(room.code);
         playerSockets.set(socket.id, { username, roomCode: room.code });
         socket.emit('joinedRoom', { roomCode: room.code });
@@ -344,8 +355,10 @@ io.on('connection', (socket) => {
       }
       const color = assignColor(room);
       room.players.push({ username, color, ready: false });
+      console.log(`[joinRoom] ${username} joined room ${code} as ${color}, players: ${room.players.length}`);
     } else {
       room = createRoom(username);
+      console.log(`[joinRoom] ${username} created room ${room.code}`);
     }
 
     socket.join(room.code);
