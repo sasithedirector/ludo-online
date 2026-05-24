@@ -1,0 +1,6 @@
+# Buildpacks configuration for Railway / Render
+# Tells the build system to install deps for both server and client, then build the client.
+# The root package.json "install" script handles everything.
+
+[build]
+nixpacksConfigPath = "nixpacks.toml"
