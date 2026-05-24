@@ -151,10 +151,12 @@ class GameClient {
   }
 
   createRoom() {
+    console.log('[GameClient] createRoom called, connected:', this.connected, 'socket:', !!this.socket);
     this.safeEmit('createRoom', { token: this.token });
   }
 
   joinRoom(roomCode: string) {
+    console.log('[GameClient] joinRoom called:', roomCode, 'connected:', this.connected);
     this.safeEmit('joinRoom', { token: this.token, roomCode });
   }
 

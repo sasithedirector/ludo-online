@@ -43,7 +43,7 @@ function App() {
   }, [token]);
 
   if (!token || !username || screen === 'auth') {
-    return <AuthScreen onAuth={(t, u) => { setToken(t); setUsername(u); setScreen('lobby'); gameClient.connectSocket(); }} />;
+    return <AuthScreen onAuth={(t, u) => { console.log('[Auth] success, token:', t?.slice(0,20)); setToken(t); setUsername(u); setScreen('lobby'); gameClient.connectSocket(); }} />;
   }
 
   if (screen === 'game' && room?.game) {

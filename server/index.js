@@ -534,9 +534,16 @@ app.get('/api/health', (req, res) => {
 const path = require('path');
 if (process.env.NODE_ENV === 'production') {
   const clientBuild = path.join(__dirname, '..', 'client', 'dist');
-  app.use(express.static(clientBuild));
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(clientBuild, 'index.html'));
+  const fs = require('fs');
+  console.log(`[static] path: ${clientBuild}`);
+  console.log(`[static] exists: ${fs.existsSync(clientBuild)}`);
+  console.log(`[static] index.html: ${fs.existsSync(path.join(clientBuild, 'index.html'))}`);
+  app.use(express.static(clientBuild, { index: 'index.html' }));
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) return next();
+    const idxPath = path.join(clientBuild, 'index.html');
+    console.log(`[static] serving index.html for: ${req.path}`);
+    res.sendFile(idxPath);
   });
 }
 
