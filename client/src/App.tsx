@@ -159,7 +159,7 @@ function LobbyScreen({ room, username, error, onLogout }: {
 
       {!room ? (
         <div className="lobby-actions">
-          <button className="btn-primary large" onClick={() => gameClient.createRoom()}>
+          <button className="btn-primary large" onClick={() => { console.log('[UI] Create Room clicked'); gameClient.createRoom(); }}>
             🏠 Create Room
           </button>
           <div className="or-divider">— OR —</div>
@@ -171,7 +171,7 @@ function LobbyScreen({ room, username, error, onLogout }: {
               onChange={e => setRoomCode(e.target.value.toUpperCase())}
               maxLength={6}
             />
-            <button className="btn-secondary" onClick={() => roomCode && gameClient.joinRoom(roomCode)}>
+            <button className="btn-secondary" onClick={() => { console.log('[UI] Join Room clicked, code:', roomCode); roomCode && gameClient.joinRoom(roomCode); }}>
               Join Room
             </button>
           </div>
