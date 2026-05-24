@@ -43,7 +43,7 @@ function App() {
   }, [token]);
 
   if (!token || !username || screen === 'auth') {
-    return <AuthScreen onAuth={(t, u) => { setToken(t); setUsername(u); gameClient.connectSocket(); }} />;
+    return <AuthScreen onAuth={(t, u) => { setToken(t); setUsername(u); setScreen('lobby'); gameClient.connectSocket(); }} />;
   }
 
   if (screen === 'game' && room?.game) {
@@ -55,6 +55,8 @@ function App() {
       />
     );
   }
+
+  // Default: show lobby (room may be null = not in a room yet)
 
   return (
     <LobbyScreen

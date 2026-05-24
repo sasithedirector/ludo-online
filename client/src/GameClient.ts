@@ -106,6 +106,10 @@ class GameClient {
       this.emit('chatMessage', data);
     });
 
+    this.socket.on('joinedRoom', (data: { roomCode: string }) => {
+      this.emit('joinedRoom', data);
+    });
+
     return this.socket;
   }
 
